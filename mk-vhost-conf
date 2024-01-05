@@ -41,7 +41,7 @@ if [ -n "$(which httpd)" ] ; then
 	apache=httpd
 fi
 apache_version=$($apache -v | grep 'Apache/' | sed -e 's#.*Apache/\([0-9]*\.[0-9]*\).*#\1#')
-apache_22_or_earlier=$( (echo "$apache_version" && echo 2.2) | sort -V | tail -n 1)
+apache_22_or_earlier=$((echo $apache_version && echo 2.2) | sort -V | tail -n 1)
 
 
 #
@@ -123,13 +123,13 @@ while [ $# -gt 0 ] ; do
 	#
 	option_handled=false
 	for unaryflag in $flag_list; do
-		if [ "--$unaryflag" == "$option" ]; then
-			variablename=$(echo "$unaryflag" | tr - _)
+		if [ "x--$unaryflag" == "x$option" ]; then
+			variablename=`echo $unaryflag | tr - _`
 			eval "$variablename=true"
 			option_handled=true
 		fi
-		if [ "--no-$unaryflag" == "$option" ]; then
-			variablename=$(echo "$unaryflag" | tr - _)
+		if [ "x--no-$unaryflag" == "x$option" ]; then
+			variablename=`echo $unaryflag | tr - _`
 			eval "$variablename=false"
 			option_handled=true
 		fi
@@ -363,9 +363,9 @@ while [ $# -gt 0 ] ; do
 		- )
 			output_to_stdout=true
 			use_dns=true
-			vhost_conf_dir=$(mktemp -dt)
+			vhost_conf_dir=`mktemp -dt`
 			vhost_conf=
-			mkdir -p "$vhost_conf_dir"
+			mkdir -p $vhost_conf_dir
 			;;
 
 		-* )
@@ -392,18 +392,18 @@ done
 # (n.b. the script 'install-vps' can insure that the
 # hostname and domain are set correctly)
 #
-if [ "$site_fqdn" == "" ] ; then
-	if [ "$site_alias" == "" ] ; then
-		site_fqdn=$(hostname --fqdn)
+if [ "x$site_fqdn" == "x" ] ; then
+	if [ "x$site_alias" == "x" ] ; then
+		site_fqdn=`hostname --fqdn`
 	else
-		site_fqdn=$(echo "$site_alias" | sed -e 's|[^.]*\.||')
+		site_fqdn=`echo $site_alias | sed -e 's|[^.]*\.||'`
 	fi
 fi
 
 #
 # If no site alias was specified, then use the site fqdn.
 #
-if [ "$site_alias" == "" ] ; then
+if [ "x$site_alias" == "x" ] ; then
 	site_alias=$site_fqdn
 fi
 
@@ -411,7 +411,7 @@ fi
 # If the document root was not set explicitly, then
 # we will set it to the site fqdn
 #
-if [ "$documentroot" = "" ] ; then
+if [ "x$documentroot" = "x" ] ; then
 	documentroot="_BASE_/_FQDN_"
 fi
 
@@ -420,37 +420,37 @@ site_shortname="${site_fqdn/.*/}"
 #
 # Rewrite the documentroot replacing any substitutions
 #
-documentroot="$(echo "$documentroot" | sed -e 's|_BASE_|'"$documentroot_base"'|g' -e 's|_FQDN_|'"$site_fqdn"'|g' -e 's|_SITE_|'"$site_shortname"'|g')"
+documentroot="`echo $documentroot | sed -e 's|_BASE_|'"$documentroot_base"'|g' -e 's|_FQDN_|'"$site_fqdn"'|g' -e 's|_SITE_|'"$site_shortname"'|g'`"
 
 # Drupal we often put the document root inside the project folder, so that
 # we can collect files not served by the webserver with the drupal root.
 # Detect this situation automatically.
-if $drupal && [ -f "$documentroot"/drupal/includes/bootstrap.inc ] ; then
+if $drupal && [ -f $documentroot/drupal/includes/bootstrap.inc ] ; then
 	documentroot=$documentroot/drupal
 fi
 
-if [ "$vhost_conf_dir" == "" ] ; then
-	if [ -d "$server_root"/sites-available ] ; then
+if [ "x$vhost_conf_dir" == "x" ] ; then
+	if [ -d $server_root/sites-available ] ; then
 		vhost_conf_dir=$server_root/sites-available
-	elif [ -d "$server_root"/conf/vhosts.d ] ; then
+	elif [ -d $server_root/conf/vhosts.d ] ; then
 		vhost_conf_dir=$server_root/conf/vhosts.d
 	else
 		vhost_conf_dir=$server_root/vhosts.d
 	fi
 fi
 
-if [ "$vhost_conf" = "" ] ; then
+if [ "x$vhost_conf" = "x" ] ; then
 	vhost_conf=$vhost_conf_dir/$prefix$site_alias
-	if [ "$apache_22_or_earlier" != "2.2" ] || [ "$(echo "$vhost_conf_dir" | grep "sites-available" 2>/dev/null)" == "" ] ; then
+	if [ "x`echo $vhost_conf_dir | grep "sites-available" 2>/dev/null`" == "x" ] ; then
 		vhost_conf=$vhost_conf".conf"
 	fi
 fi
 
-if [ "$log_dir" == "" ] ; then
+if [ "x$log_dir" == "x" ] ; then
 	log_dir=/var/log/apache2
 fi
 
-if [ "$(echo "$admin_email" | grep "@" 2>/dev/null)" == "" ] ; then
+if [ "x`echo $admin_email | grep "@" 2>/dev/null`" == "x" ] ; then
 	admin_email=$admin_email"@$site_fqdn"
 fi
 
@@ -472,11 +472,11 @@ fi
 # If authentication is required, but no auth
 # file was specified, then set a default path.
 #
-if $auth_required || $auth_cram_md5 && [ "$auth_file" == "" ] ; then
+if $auth_required || $auth_cram_md5 && [ "x$auth_file" == "x" ] ; then
 	auth_file=$server_root/${site_fqdn}-auth-file
 fi
 
-if [ "$auth_message" == "" ] ; then
+if [ "x$auth_message" == "x" ] ; then
 	auth_message="Authentication required to access ${site_alias}"
 fi
 
@@ -516,18 +516,18 @@ createReplacementScript()
 	variable_list=$2
 	(
 		for x in  $variable_list ; do
-			var_pattern="__"$(echo "$x" | tr '[:lower:]' '[:upper:]')"__"
-			var_value=$(eval echo "\"\\$$x"\")
+			var_pattern="__"`echo $x | tr '[:lower:]' '[:upper:]'`"__"
+			var_value=`eval echo "\"\\$$x"\"`
 			sep="|"
-			if [ "x$(echo "$var_value" | grep "|" 2>/dev/null)" != "x" ] ; then
+			if [ "x`echo "$var_value" | grep "|" 2>/dev/null`" != "x" ] ; then
 				sep="#"
-				if [ "x$(echo "$var_value" | grep "#" 2>/dev/null)" != "x" ] ; then
+				if [ "x`echo "$var_value" | grep "#" 2>/dev/null`" != "x" ] ; then
 					sep="/"
 				fi
 			fi
 			echo "s$sep$var_pattern$sep$var_value$sep"
 		done
-	) >> "$sed_script"
+	) >> $sed_script
 }
 
 
@@ -538,13 +538,13 @@ createReplacementScript()
 #
 getNameVirtualHostIP()
 {
-	if [ "$1" == "" ] ; then
+	if [ "x$1" == "x" ] ; then
 		ip="[^:]*"
 	else
 		ip="\(\*\|$1\)"
 	fi
 	port=$2
-	nvh=$(grep -i "NameVirtualHost *$ip\(\|:$port\) *$" "$server_root"/*.conf | head -n 1)
+	nvh=`grep -i "NameVirtualHost *$ip\(\|:$port\) *$" $server_root/*.conf | head -n 1`
 	if [ "x$nvh" != "x" ] ; then
 		# echo "nvh is $nvh" >&2
 		echo "$nvh" | tr '[:upper:]' '[:lower:]' | sed -e 's|.*namevirtualhost *\([^:]*\):.*|\1|g'
@@ -560,18 +560,18 @@ getNameVirtualHostIP()
 # then we'll always use it, even if that means that
 # we won't be able to resolve the website on this machine
 #
-if [ "$static_ip" == "" ] ; then
+if [ "x$static_ip" == "x" ] ; then
 	#
 	# First see if we can get the static IP address from DNS.
 	#
 	if $network_available ; then
-		site_alias_ip=$(host "$site_alias" | grep " has address" | head -n 1 | sed -e 's|.*has address *||g')
+		site_alias_ip=`host $site_alias | grep " has address" | head -n 1 | sed -e 's|.*has address *||g'`
 		#
 		# We must have a configured interface with
 		# the specified IP address; otherwise we
 		# will ignore the information from DNS.
 		#
-		if $use_dns || [ "x$(/sbin/ifconfig | grep 'inet addr:$site_alias_ip ')" != "x" ] ; then
+		if $use_dns || [ "x`/sbin/ifconfig | grep 'inet addr:$site_alias_ip '`" != "x" ] ; then
 			static_ip=$site_alias_ip
 			clear_hosts=true
 			echo "DNS for $site_alias resolves to this machine; using $static_ip (from DNS) for address"
@@ -581,13 +581,13 @@ if [ "$static_ip" == "" ] ; then
 	# If the static IP address is still unknown, then
 	# assume localhost and force "set hosts".
 	#
-	if [ "$static_ip" == "" ] ; then
+	if [ "x$static_ip" == "x" ] ; then
 		static_ip="127.0.0.1"
 		echo "assume localhost; clear_hosts is $clear_hosts"
 		if ! $clear_hosts ; then
 			set_hosts=true
-			drush mk-local-ip "$site_alias"
-                        local_ip=$(grep "$site_alias" /etc/hosts 2>/dev/null | sed -e 's/  *.*//')
+			drush mk-local-ip $site_alias
+                        local_ip=`grep $site_alias /etc/hosts 2>/dev/null | sed -e 's/  *.*//'`
                         if [ "x$local_ip" != "x" ] ; then
                         	static_ip=$local_ip
                         fi
@@ -606,9 +606,9 @@ https_ip=$static_ip
 # try to fix up ports.conf if there are no NameVirtualHost directives
 # in it.
 #
-if [ -f /etc/apache2/ports.conf ] && [ "$static_ip" == "127.0.0.1" ] && $set_hosts ; then
-	for port in "80" $(cat /etc/apache2/ports.conf | grep '^ *Listen' | sed -e 's|[^0-9]||g') ; do
-		if [ "$(grep -i "NameVirtualHost.*:$port" /etc/apache2/ports.conf)" = "" ] ; then
+if [ -f /etc/apache2/ports.conf ] && [ "x$static_ip" == "x127.0.0.1" ] && $set_hosts ; then
+	for port in "80" `cat /etc/apache2/ports.conf | grep '^ *Listen' | sed -e 's|[^0-9]||g'` ; do
+		if [ "x`grep -i "NameVirtualHost.*:$port" /etc/apache2/ports.conf`" = "x" ] ; then
 			echo "Adding a NameVirtualHost for port $port to /etc/apache2/ports.conf"
 			sed -ie "/Listen *$port/iNameVirtualHost *:$port" /etc/apache2/ports.conf
 		fi
@@ -623,13 +623,13 @@ fi
 # static ip address specified is unique to this site,
 # and we will use it for a VirtualHost directive.
 #
-http_nvh=$(getNameVirtualHostIP "$static_ip" "$http_port")
+http_nvh=`getNameVirtualHostIP $static_ip $http_port`
 if [ "x$http_nvh" != "x" ] ; then
 	http_namev="Name"
 	http_ip="$http_nvh"
 fi
 if $configure_https ; then
-	https_nvh=$(getNameVirtualHostIP "$static_ip" "$https_port")
+	https_nvh=`getNameVirtualHostIP $static_ip $https_port`
 	if [ "x$https_nvh" != "x" ] ; then
 		https_namev="Name"
 		https_ip="$https_nvh"
@@ -656,7 +656,7 @@ certificate_password_option=
 # Next we'll write all of our variables into a sed script
 # for later use with...  sed.
 #
-sed_script=$(mktemp)
+sed_script=`mktemp`
 
 #
 # If the caller provided additional configuration directives,
@@ -669,13 +669,13 @@ sed_script=$(mktemp)
 # for anyhthing that is used (just a thought).
 #
 if [ "x$additional_configuration" != "x" ] ; then
-additional_configuration_tmp=$(mktemp)
-cat << __END__ >> "$sed_script"
+additional_configuration_tmp=`mktemp`
+cat << __END__ >> $sed_script
 /Additional configuration directives/r$additional_configuration_tmp
 __END__
 fi
 
-createReplacementScript "$sed_script" "
+createReplacementScript $sed_script "
 	site_fqdn
 	site_alias
 	admin_email
@@ -702,7 +702,7 @@ createReplacementScript "$sed_script" "
 "
 
 if [ "x$additional_configuration_tmp" != "x" ] ; then
-cat "$additional_configuration" | sed -f "$sed_script" > "$additional_configuration_tmp"
+cat $additional_configuration | sed -f $sed_script > $additional_configuration_tmp
 fi
 
 #
@@ -715,7 +715,7 @@ fi
 # the access filename and AllowOverride directives.
 #
 if ! $allow_override ; then
-cat << "__END__" >> "$sed_script"
+cat << "__END__" >> $sed_script
 /AccessFileName/d
 s|AllowOverride *All|AllowOverride None|
 __END__
@@ -726,8 +726,8 @@ fi
 # remove the authentication directives from
 # the configuration template
 #
-if $custom_auth || [ "$auth_file" == "" ] ; then
-cat << "__END__" >> "$sed_script"
+if $custom_auth || [ "x$auth_file" == "x" ] ; then
+cat << "__END__" >> $sed_script
 /AuthType/d
 /AuthName/d
 /AuthUserFile/d
@@ -738,7 +738,7 @@ fi
 if $proxy ; then
 needed_mods="$needed_mods proxy proxy_http"
 else
-cat << "__END__" >> "$sed_script"
+cat << "__END__" >> $sed_script
 /SSLProxyEngine/d
 /ProxyPass/d
 /ProxyPreserveHost/d
@@ -758,7 +758,7 @@ if $configure_http ; then
 #
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-cat << "__END__" | sed -f "$sed_script" > "$vhost_conf"
+cat << "__END__" | sed -f $sed_script > $vhost_conf
 <VirtualHost __HTTP_IP__:__HTTP_PORT__>
 	ServerAdmin __ADMIN_EMAIL__
 	ServerName __SITE_ALIAS__
@@ -855,7 +855,7 @@ else
 #
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-cat << "__END__" | sed -f "$sed_script" > "$vhost_conf"
+cat << "__END__" | sed -f $sed_script > $vhost_conf
 <VirtualHost __HTTP_IP__:__HTTP_PORT__>
 	ServerAdmin __ADMIN_EMAIL__
 	ServerName __SITE_ALIAS__
@@ -914,7 +914,7 @@ if [ "x$site_alias" != "x$site_fqdn" ] ; then
 #
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-cat << "__END__" | sed -f "$sed_script" >> "$vhost_conf"
+cat << "__END__" | sed -f $sed_script >> $vhost_conf
 <IfModule mod_ssl.c>
 <VirtualHost __HTTPS_IP__:__HTTPS_PORT__>
 	ServerAdmin __ADMIN_EMAIL__
@@ -960,7 +960,7 @@ else
 #
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-cat << "__END__" | sed -f "$sed_script" >> "$vhost_conf"
+cat << "__END__" | sed -f $sed_script >> $vhost_conf
 <IfModule mod_ssl.c>
 <VirtualHost __HTTPS_IP__:__HTTPS_PORT__>
 	ServerAdmin __ADMIN_EMAIL__
@@ -1144,12 +1144,12 @@ fi
 
 # If we are running apache 2.2 or earlier, back-convert our
 # template file.  See: http://httpd.apache.org/docs/trunk/upgrading.html
-if [ "$apache_22_or_earlier" == "2.2" ] ; then
+if [ $apache_22_or_earlier == "2.2" ] ; then
 	sed -i \
 		-e 's#Require all denied#Order deny,allow\nDeny from all#' \
 		-e 's#Require all granted#Order allow,deny\nAllow from all#' \
 		-e 's#Require host \(.*\)#Order deny,allow\nDeny from all\nAllow from \1#' \
-		"$vhost_conf"
+		$vhost_conf
 fi
 
 #
@@ -1157,8 +1157,8 @@ fi
 # and then remove the temporary directory that it is stored in
 #
 if $output_to_stdout ; then
-	cat "$vhost_conf"
-	rm -rf "$vhost_conf_dir"
+	cat $vhost_conf
+	rm -rf $vhost_conf_dir
 #
 # If not outputting to stdout, then fix up some
 # extra stuff on the filesystem (make directories,
@@ -1168,19 +1168,19 @@ else
 	#
 	# Create some necessary directories
 	#
-	mkdir -p "$http_documentroot""/"
-	mkdir -p "$https_documentroot""/"
-	mkdir -p $cgi_bin_dir/"$cgi_bin_prefix""cgi-bin""/"
-	mkdir -p $cgi_bin_dir/"$cgi_bin_prefix""$cgi_bin_ssl_prefix""cgi-bin""/"
+	mkdir -p $http_documentroot"/"
+	mkdir -p $https_documentroot"/"
+	mkdir -p $cgi_bin_dir/$cgi_bin_prefix"cgi-bin""/"
+	mkdir -p $cgi_bin_dir/$cgi_bin_prefix$cgi_bin_ssl_prefix"cgi-bin""/"
 
 	#
 	# If $vhost_conf is inside a folder called
 	# "sites-available", then call a2ensite to
 	# insure that the site is enabled.
 	#
-	if [ "x$(echo "$vhost_conf_dir" | grep "sites-available" 2>/dev/null)" != "x" ] ; then
-		vhost_conf_file=$(echo "$vhost_conf" | sed -e 's|.*/||')
-		a2ensite "$vhost_conf_file"
+	if [ "x`echo $vhost_conf_dir | grep "sites-available" 2>/dev/null`" != "x" ] ; then
+		vhost_conf_file=`echo $vhost_conf | sed -e 's|.*/||'`
+		a2ensite $vhost_conf_file
 	fi
 
 	#
@@ -1191,10 +1191,10 @@ else
 	#
 	if $clear_hosts ; then
 		sed -i -e '/ $site_alias\$/d' /etc/hosts
-	elif $set_hosts && [ "$(grep "^127.0.0.1[ \t]*$site_alias$" /etc/hosts)" == "" ] ; then
+	elif $set_hosts && [ "x`grep "^127.0.0.1[ \t]*$site_alias$" /etc/hosts`" == "x" ] ; then
                 # Only write the /etc/hosts entry if $static_ip is 127.0.0.1; if
                 # it is any other value, drush mk-local-ip has already created it.
-                if [ "$static_ip" == "127.0.0.1" ] ; then
+                if [ "x$static_ip" == "x127.0.0.1" ] ; then
                 	echo "127.0.0.1 $site_alias" >> /etc/hosts
                 fi
 	fi
@@ -1203,11 +1203,11 @@ else
 	# If apache has mods-availalbe and mods-enabled folders,
 	# then make sure that the mods we need are enabled
 	#
-	if [ -d "$server_root"/mods-available ] ; then
+	if [ -d $server_root/mods-available ] ; then
 	(
 		for mod in $needed_mods ; do
-			if [ ! -f "$server_root"/mods-enabled/"$mod" ] ; then
-				a2enmod "$mod"
+			if [ ! -f $server_root/mods-enabled/$mod ] ; then
+				a2enmod $mod
 			fi
 		done
 	)
@@ -1218,11 +1218,11 @@ else
 	#
 	if $configure_https ; then
 
-		if [ ! -f "$server_private_key" ] ; then
+		if [ ! -f $server_private_key ] ; then
 
-			mkdir -p "$private_key_dir"
-			mkdir -p "$certificate_dir"
-			mkdir -p "$signing_request_dir"
+			mkdir -p $private_key_dir
+			mkdir -p $certificate_dir
+			mkdir -p $signing_request_dir
 
 			#
 			# Make a serial number from the date.
@@ -1233,21 +1233,21 @@ else
 			# fifteen minutes of each other and you'll
 			# be okay...)
 			#
-			h=$(date "+%k")
-			m=$(date "+%M" | sed -e 's|0\([0-9]\)|\1|')
+			h=`date "+%k"`
+			m=`date "+%M" | sed -e 's|0\([0-9]\)|\1|'`
                         echo "h is $h and m is $m"
 			s="$(((h*4)+(m/15)))"
 			z=0
 			if [ ${#s} = 2 ] ; then
 				z=
 			fi
-			certificate_serial=$(date "+%Y%m%d")"$z$s"
+			certificate_serial=`date "+%Y%m%d"`"$z$s"
 			echo "certificate serial is $certificate_serial"
 
 			#
 			# Create the Certificate Authority [CA] key
 			#
-			cat <<- __END__ > "$certificate_dir"/"${site_fqdn}"-ca-params.txt
+			cat <<- __END__ > $certificate_dir/${site_fqdn}-ca-params.txt
 				$server_location_country
 				$server_location_state
 				$server_location_city
@@ -1258,15 +1258,15 @@ else
 			__END__
 
                         echo "ca params ($certificate_dir/${site_fqdn}-ca-params.txt) are:"
-                        cat "$certificate_dir"/"${site_fqdn}"-ca-params.txt
+                        cat $certificate_dir/${site_fqdn}-ca-params.txt
 
-                        openssl genrsa "$certificate_password_option" -out "$certificate_dir"/"${site_fqdn}"-ca.key 4096
-			openssl req -new -x509 -days "$certificate_life" -key "$certificate_dir"/"${site_fqdn}"-ca.key -out "$certificate_dir"/"${site_fqdn}"-ca.crt < "$certificate_dir"/"${site_fqdn}"-ca-params.txt
+                        openssl genrsa $certificate_password_option -out $certificate_dir/${site_fqdn}-ca.key 4096
+			openssl req -new -x509 -days $certificate_life -key $certificate_dir/${site_fqdn}-ca.key -out $certificate_dir/${site_fqdn}-ca.crt < $certificate_dir/${site_fqdn}-ca-params.txt
 
 			#
 			# Create the server private key
 			#
-			cat <<- __END__ > "$certificate_dir"/"${site_fqdn}"-csr-params.txt
+			cat <<- __END__ > $certificate_dir/${site_fqdn}-csr-params.txt
 				$server_location_country
 				$server_location_state
 				$server_location_city
@@ -1280,11 +1280,11 @@ else
 
 
                         echo "csr params ($certificate_dir/${site_fqdn}-csr-params.txt) are:"
-                        cat "$certificate_dir"/"${site_fqdn}"-csr-params.txt
+                        cat $certificate_dir/${site_fqdn}-csr-params.txt
 
-			openssl genrsa "$certificate_password_option" -out "$server_private_key" 4096
-			openssl req -new -key "$server_private_key" -out "$signing_request" < "$certificate_dir"/"${site_fqdn}"-csr-params.txt
-			openssl x509 -req -days "$certificate_life" -in "$signing_request" -CA "$certificate_dir"/"${site_fqdn}"-ca.crt -CAkey "$certificate_dir"/"${site_fqdn}"-ca.key -set_serial "$certificate_serial" -out "$server_certificate"
+			openssl genrsa $certificate_password_option -out $server_private_key 4096
+			openssl req -new -key $server_private_key -out $signing_request < $certificate_dir/${site_fqdn}-csr-params.txt
+			openssl x509 -req -days $certificate_life -in $signing_request -CA $certificate_dir/${site_fqdn}-ca.crt -CAkey $certificate_dir/${site_fqdn}-ca.key -set_serial $certificate_serial -out $server_certificate
 		fi
 
 	fi
@@ -1294,35 +1294,35 @@ else
 	#
 	if [ "x$auth_file" != "x" ] ; then
 
-		if [ ! -f "$auth_file" ] ; then
+		if [ ! -f $auth_file ] ; then
 
 			if [ "x$auth_backup" != "x" ] ; then
-				cp "$auth_backup" "$auth_file"
+				cp $auth_backup $auth_file
 			else
-				touch "$auth_file"
+				touch $auth_file
 			fi
 
-			chown root:www-data "$auth_file"
-			chmod 640 "$auth_file"
+			chown root:www-data $auth_file
+			chmod 640 $auth_file
 
 			if $auth_cram_md5 && [ -f /etc/cram-md5.pwd ] ; then
-				auth_users=$auth_users" "$(sed -e 's/\t/:/' /etc/cram-md5.pwd)
+				auth_users=$auth_users" "`sed -e 's/\t/:/' /etc/cram-md5.pwd`
 			fi
 
 			if [ "x$auth_users" != "x" ] ; then
 				for user_pw in $auth_users ; do
-					u=$(echo "$user_pw" | sed -e 's|:.*||')
-					p=$(echo "$user_pw" | sed -e 's|[^:]*:||')
+					u=`echo $user_pw | sed -e 's|:.*||'`
+					p=`echo $user_pw | sed -e 's|[^:]*:||'`
 					if $auth_dbm ; then
-						cryptpw=$(openssl passwd -crypt "$p")
-						dbmmanage "$auth_file" add "$u" $auth_dbm
+						cryptpw=`openssl passwd -crypt $p`
+						dbmmanage $auth_file add $u $auth_dbm
 					else
-						htpasswd -b "$auth_file" "$u" "$p"
+						htpasswd -b $auth_file $u $p
 					fi
 				done
 			fi
 
-			if [ ! -s "$auth_file" ] ; then
+			if [ ! -s $auth_file ] ; then
 				echo
 				echo "Empty authentication file for $site_fqdn created."
 				echo "Restore actual authentication from backup to:"
@@ -1339,7 +1339,7 @@ else
 
 fi
 
-rm -f "$sed_script"
+rm -f $sed_script
 if [ "x$additional_configuration_tmp" != "x" ] ; then
-rm -f "$additional_configuration_tmp"
+rm -f $additional_configuration_tmp
 fi
